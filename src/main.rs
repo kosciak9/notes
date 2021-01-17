@@ -1,9 +1,11 @@
 extern crate regex;
+extern crate tera;
 
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
+use tera::{Tera, Context};
 
 // parse one note- subset of org file:
 // - title
@@ -45,10 +47,18 @@ fn parse_org_file(path: &str) -> Result<Note, ()> {
     let id = &id_regex.captures(&path).unwrap()[1];
 
     let title_regex = Regex::new(r"^#\+TITLE: (.+)").unwrap();
+    let title_result = title_regex.find(&contents).unwrap();
     let title = &title_regex.captures(&contents).unwrap()[1];
+    let mut new_contents = String::from(&contents[0..title_result.start()]);
+    new_contents.push_str(&contents[title_result.end()..]);
+    let contents = new_contents;
 
     let date_regex = Regex::new(r"(?m)^#\+DATE: (.+)").unwrap();
+    let date_result = date_regex.find(&contents).unwrap();
     let date = &date_regex.captures(&contents).unwrap()[1];
+    let mut new_contents = String::from(&contents[0..date_result.start()]);
+    new_contents.push_str(&contents[date_result.end()..]);
+    let contents = new_contents;
 
     let tasks_regex = Regex::new(r"(?m)^\*+\s+([A-Z]+)\s+(.+)").unwrap();
     let mut tasks = Vec::new();
@@ -92,5 +102,27 @@ fn main() {
         notes.insert(String::from(note.id.to_string()), note);
     }
 
-    println!("{:?}", notes);
+    let mut tera = match Tera::new("templates/*.html") {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Parsing error(s): {}", e);
+            ::std::process::exit(1);
+        }
+    };
+
+    tera.autoescape_on(vec![]);
+
+    for (id, note) in notes {
+        let mut context = Context::new();
+        context.insert("title", &note.title);
+        context.insert("contents", &note.contents);
+        let result = match tera.render("note.html", &context) {
+            Ok(t) => t,
+            Err(error) => panic!("{:?}", error),
+        };
+        let mut file = File::create(format!("output/{}.html", id)).unwrap();
+        file.write_all(result.as_bytes()).unwrap();
+    }
+
+    // println!("{:?}", notes);
 }
