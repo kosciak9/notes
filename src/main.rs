@@ -35,7 +35,7 @@ struct Note {
 fn parse_note(path: &str) -> Note {
     let mut file = File::open(path).expect("lol");
     let path = Path::new(path).file_name().unwrap().to_str().unwrap();
-    let id = &String::from(path)[..9];
+    let id = &String::from(path)[..10];
 
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
