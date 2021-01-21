@@ -1,24 +1,16 @@
-# notes
+# slipbox
 
 - zettelkasten notes method
-- each note a simplified .org file
-  - TITLE, DATE support
-  - headings with TODO states supported
-- converted into Markdown for web rendering
-- tracking links
-  - for search (popularity - more links, more important page)
-  - for search (lack of links to a page - either start point or a mistake)
-- tracking todos
-  - for agenda
+- each note is a .md file
+- links in between notes `(link description)[notes:$NOTE_ID]`
 
-## functionality required:
+## web export
 
-- web export
-- adding notes as simple as possible
-- agenda view for both editor and web
-- editor support (<the-text-editor?>)
+- daemon mode for continous export on file change
+- some nice theme for Kindle
 
-## ideas
+## CLI and code
 
-- mobile app with random note for a day to repeat
-- kindle website
+- add note
+- search notes
+- show links and backlinks for a note

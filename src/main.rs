@@ -1,106 +1,71 @@
-extern crate regex;
-extern crate tera;
+mod settings;
 
+use log;
+use notify::{watcher, RecursiveMode, Watcher};
+use pulldown_cmark::{html, Options, Parser};
 use regex::Regex;
+use serde::Serialize;
+use settings::Settings;
+use simple_logger;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use tera::{Tera, Context};
+use std::path::Path;
+use std::sync::mpsc::channel;
+use std::time::Duration;
+use tera::{Context, Tera};
 
-// parse one note- subset of org file:
-// - title
-// - date of creation
-// - list of tasks with due dates
-// - list of links to other notes [[notes::$ID][title]]
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Link {
     title: String,
     target: String,
 }
 
-#[derive(Debug)]
-struct Task {
-    title: String,
-    status: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Note {
+    title: String,
     path: String,
     id: String,
-    title: String,
-    date: String,
-    tasks: Vec<Task>,
+    // date: String,
+    // tasks: Vec<Task>,
     links: Vec<Link>,
     contents: String,
 }
 
-fn parse_org_file(path: &str) -> Result<Note, ()> {
-    let mut file = File::open(path).expect("test");
+fn parse_note(path: &str) -> Note {
+    let mut file = File::open(path).expect("lol");
+    let path = Path::new(path).file_name().unwrap().to_str().unwrap();
+    let id = &String::from(path)[..9];
+
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
-    let id_regex =
-        Regex::new(r"(\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b)")
-            .unwrap();
-    let id = &id_regex.captures(&path).unwrap()[1];
-
-    let title_regex = Regex::new(r"^#\+TITLE: (.+)").unwrap();
-    let title_result = title_regex.find(&contents).unwrap();
+    let title_regex = Regex::new(r"^# (.+)").unwrap();
     let title = &title_regex.captures(&contents).unwrap()[1];
-    let mut new_contents = String::from(&contents[0..title_result.start()]);
-    new_contents.push_str(&contents[title_result.end()..]);
-    let contents = new_contents;
 
-    let date_regex = Regex::new(r"(?m)^#\+DATE: (.+)").unwrap();
-    let date_result = date_regex.find(&contents).unwrap();
-    let date = &date_regex.captures(&contents).unwrap()[1];
-    let mut new_contents = String::from(&contents[0..date_result.start()]);
-    new_contents.push_str(&contents[date_result.end()..]);
-    let contents = new_contents;
-
-    let tasks_regex = Regex::new(r"(?m)^\*+\s+([A-Z]+)\s+(.+)").unwrap();
-    let mut tasks = Vec::new();
-    for task in tasks_regex.captures_iter(&contents) {
-        tasks.push(Task {
-            title: String::from(&task[2]),
-            status: String::from(&task[1]),
-        })
-    }
-
-    let links_regex = Regex::new(r"(?m)\[\[notes:(.+)\](\[(.+)\])?]").unwrap();
+    let links_regex = Regex::new(r"(?m)\[(?P<desc>.*)\]\(notes:(?P<id>.+)\)").unwrap();
     let mut links = Vec::new();
     for link in links_regex.captures_iter(&contents) {
-        let title = match link.get(2) {
-            Some(title) => String::from(title.as_str()),
-            _ => String::new(),
-        };
         links.push(Link {
-            title,
-            target: String::from(&link[1]),
+            title: String::from(&link[1]),
+            target: String::from(&link[2]),
         });
     }
+    let contents = links_regex.replace_all(&contents, "($desc)[/$id]");
 
-    let note = Note {
-        path: String::from(path),
-        id: String::from(id),
+    Note {
         title: String::from(title),
-        date: String::from(date),
-        tasks,
+        id: String::from(id),
+        path: String::from(path),
         links,
-        contents: String::from(contents)
-    };
-    Ok(note)
+        contents: String::from(contents),
+    }
 }
 
 fn main() {
-    let mut notes = HashMap::new();
-    for file in std::fs::read_dir("./examples").unwrap() {
-        let file = file.unwrap();
-        let note = parse_org_file(file.path().to_str().unwrap()).expect("WRONG");
-        notes.insert(String::from(note.id.to_string()), note);
-    }
+    simple_logger::SimpleLogger::new()
+        .init()
+        .expect("Logger failed to initialize");
 
     let mut tera = match Tera::new("templates/*.html") {
         Ok(t) => t,
@@ -109,20 +74,61 @@ fn main() {
             ::std::process::exit(1);
         }
     };
-
     tera.autoescape_on(vec![]);
 
-    for (id, note) in notes {
-        let mut context = Context::new();
-        context.insert("title", &note.title);
-        context.insert("contents", &note.contents);
-        let result = match tera.render("note.html", &context) {
-            Ok(t) => t,
-            Err(error) => panic!("{:?}", error),
-        };
-        let mut file = File::create(format!("output/{}.html", id)).unwrap();
-        file.write_all(result.as_bytes()).unwrap();
-    }
+    let (tx, rx) = channel();
+    let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
 
-    // println!("{:?}", notes);
+    let settings = Settings::new().unwrap();
+    log::info!("settings: {:?}", settings);
+    watcher
+        .watch(&settings.directory, RecursiveMode::Recursive)
+        .unwrap();
+
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                log::info!("{:?}", event);
+                let mut notes = HashMap::new();
+                for file in std::fs::read_dir(&settings.directory).unwrap() {
+                    let file = file.unwrap();
+                    let path = String::from(file.path().to_str().unwrap());
+                    if path.ends_with(".md") {
+                        let note = parse_note(&path);
+                        notes.insert(String::from(note.id.to_string()), note);
+                    }
+                }
+
+                for (id, note) in notes {
+                    let mut options = Options::empty();
+                    options.insert(Options::ENABLE_STRIKETHROUGH);
+                    let parser = Parser::new_ext(&note.contents, options);
+                    let mut contents = String::new();
+                    html::push_html(&mut contents, parser);
+
+                    let mut context = Context::new();
+                    context.insert("title", &note.title);
+                    context.insert("contents", &contents);
+                    let result = match tera.render("note.html", &context) {
+                        Ok(t) => t,
+                        Err(error) => panic!("{:?}", error),
+                    };
+
+                    let id = if id == settings.index {
+                        String::from("index")
+                    } else {
+                        id
+                    };
+
+                    let mut file = File::create(format!("output/{}.html", id)).unwrap();
+                    file.write_all(result.as_bytes()).unwrap();
+                    let serialized = serde_json::to_string(&note).unwrap();
+                    let mut file = File::create(format!("output/{}.json", id)).unwrap();
+                    file.write_all(serialized.as_bytes()).unwrap();
+                    log::info!("rerun web export of slipbox notes");
+                }
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
 }

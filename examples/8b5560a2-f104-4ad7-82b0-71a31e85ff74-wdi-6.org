@@ -1,9 +1,0 @@
-#+TITLE: Notatki z WdI, 20.12.2020
-#+DATE: 2020-12-20T19:32:23.123Z
-
-* Maszyna Turinga
-  cos tam cos tam
-  podobne do PMC [[notes:625befec-a4e8-4f6c-b91a-eec67a606c81]]
-
-** TODO zadanie domowe
-DEADLINE: <2021-01-20>
