@@ -1,5 +1,5 @@
 [package]
-name = "notes"
+name = "slipbox"
 version = "0.1.0"
 authors = ["Franciszek Madej <f.madej@protonmail.com>"]
 edition = "2018"
