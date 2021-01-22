@@ -99,6 +99,24 @@ fn main() {
                     }
                 }
 
+                let mut context = Context::new();
+                let serialized = serde_json::to_string(&notes).unwrap();
+                context.insert("notes", &serialized);
+                context.insert("notes_dict", &notes);
+                context.insert("index", &settings.index);
+                let result = match tera.render("random.html", &context) {
+                    Ok(t) => t,
+                    Err(error) => panic!("{:?}", error),
+                };
+                let mut file = File::create("output/random.html").unwrap();
+                file.write_all(result.as_bytes()).unwrap();
+                let result = match tera.render("search.html", &context) {
+                    Ok(t) => t,
+                    Err(error) => panic!("{:?}", error),
+                };
+                let mut file = File::create("output/search.html").unwrap();
+                file.write_all(result.as_bytes()).unwrap();
+
                 for (id, note) in notes {
                     let mut options = Options::empty();
                     options.insert(Options::ENABLE_STRIKETHROUGH);

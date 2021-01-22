@@ -1,0 +1,18 @@
+{% extends "base.html" %} {% block title %}select random note{% endblock title %} {% block content
+%}
+<div class="searchbox">
+  <button id="random-button">random note</button>
+</div>
+<script>
+  const notes = {{ notes }}
+  const index = "{{ index }}"
+
+  document.getElementById("random-button").addEventListener("click", () => {
+    const ids = Object.keys(notes);
+    let randomId = ids[Math.floor(Math.random() * ids.length)];
+    if (randomId === index) randomId = "/"
+
+    window.location.href = `/${randomId}.html`
+  });
+</script>
+{% endblock content %}

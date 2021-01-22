@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block title %}select random note{% endblock title %} {% block content
+%}
+<div class="searchbox">
+  <label for="search">Search your slipbox:</label>
+  <input type="text" id="search" name="search" list="notes-list" />
+  <button id="submit">go!</button>
+</div>
+<datalist id="notes-list">
+  {% for id, note in notes_dict %}
+  <option value="{{id}}">{{ note.title }}</option>
+  {% endfor %}
+</datalist>
+<script>
+  const index = "{{ index }}";
+  document.getElementById("submit").addEventListener("click", () => {
+    let id = document.getElementById("search").value;
+    if (id === index) id = "/";
+    window.location.href = `/${id}.html`;
+  });
+</script>
+{% endblock content %}
