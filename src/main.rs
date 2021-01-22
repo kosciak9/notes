@@ -51,7 +51,7 @@ fn parse_note(path: &str) -> Note {
             target: String::from(&link[2]),
         });
     }
-    let contents = links_regex.replace_all(&contents, "[$desc](/$id)");
+    let contents = links_regex.replace_all(&contents, "[$desc](/$id.html)");
 
     Note {
         title: String::from(title),
