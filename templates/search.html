@@ -1,5 +1,10 @@
-{% extends "base.html" %} {% block title %}select random note{% endblock title %} {% block content
-%}
+{% extends "base.html" %}
+
+<!-- prettier-ignore -->
+{% block title %}select random note{% endblock title %}
+
+<!-- prettier-ignore -->
+{% block content%}
 <div class="searchbox">
   <label for="search">Search your slipbox:</label>
   <input type="text" id="search" name="search" list="notes-list" />
@@ -10,12 +15,30 @@
   <option value="{{id}}">{{ note.title }}</option>
   {% endfor %}
 </datalist>
-<script>
+<div class="results"></div>
+{% endblock content %}
+
+<!-- prettier-ignore -->
+{% block scripts %}
+<script type="text/javascript">
+  const notes = {{ notes }}
   const index = "{{ index }}";
-  document.getElementById("submit").addEventListener("click", () => {
-    let id = document.getElementById("search").value;
-    if (id === index) id = "/";
-    window.location.href = `/${id}.html`;
+
+  document.getElementsByTagName("button")[0].addEventListener("click", function () {
+    var phrase = document.getElementsByTagName("input")[0].value;
+    var ids = Object.keys(notes);
+    // ids = shuffleArray(ids);
+
+    var result = "<ul>";
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      if (notes[id].contents.indexOf(phrase) !== -1) {
+        result += '<div><a href="/' + id + '.html"><h2>' + notes[id].title + "</h2></a><p>" + notes[id].contents + "</div>";
+      }
+    }
+
+    result += "</ul>"
+    document.getElementsByTagName("div")[1].innerHTML = result;
   });
 </script>
-{% endblock content %}
+{% endblock scripts %}

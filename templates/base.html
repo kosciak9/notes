@@ -2,7 +2,7 @@
 <html lang="pl">
   <head>
     <meta charset="utf-8" />
-    <title>{% block title %}{% endblock title %}</title>
+    <title>{% block title %}{% endblock title %} - slipbox</title>
 
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,32 +15,26 @@
   </head>
   <body>
     <header class="navigation">
-      <a class="navlink" href="/"> <i class="padding-x" data-feather="archive"></i>slipbox</a>
+      <a class="navlink" href="/">
+        <i class="padding-x" data-feather="archive"></i>
+        slipbox
+      </a>
       <a class="navlink" href="/search.html">
         <i class="padding-x" data-feather="search"></i>
-        search</a
-      >
+        search
+      </a>
       <a class="navlink" href="/random.html">
         <i class="padding-x" data-feather="shuffle"></i>
-        random</a
-      >
+        random
+      </a>
     </header>
-    <main class="container">{% block content %}{% endblock content %}</main>
+
+    <main class="container">{% block content %}404!{% endblock content %}</main>
 
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
       feather.replace();
-
-      // document.getElementById("random-button").addEventListener("click", () => {
-      //   fetch("/notes.json")
-      //     .then((res) => res.json())
-      //     .then((json) => {
-      //       const notes = Object.keys(json);
-      //       const noteId = notes[Math.floor(Math.random() * notes.length)];
-
-      //       console.log(noteId);
-      //     });
-      // });
     </script>
+    {% block scripts %}{% endblock scripts %}
   </body>
 </html>

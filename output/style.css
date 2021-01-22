@@ -4,18 +4,23 @@ html,
 body {
   width: 100%;
   height: 100%;
+  font-size: larger;
 }
 
 .navigation {
   padding: 12px;
-  display: flex;
-  justify-content: space-between;
   width: 100%;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 .navlink {
+  width: 30%;
   padding: 4px;
   display: inline-block;
+  text-align: center;
   font-weight: bold;
   text-transform: uppercase;
   color: black;
@@ -42,6 +47,7 @@ body {
 }
 
 blockquote {
+  position: relative;
   font-style: italic;
   font-weight: lighter;
   background-color: antiquewhite;
@@ -52,7 +58,8 @@ blockquote {
 
 blockquote::before {
   content: '"';
-  left: 24px;
+  top: -4px;
+  left: 4px;
   font-size: 3em;
   position: absolute;
 }
