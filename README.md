@@ -6,8 +6,8 @@
 
 ## web export
 
-- daemon mode for continous export on file change
-- some nice theme for Kindle
+- [x] `lol` daemon mode for continous export on file change
+- [ ] good CSS with Kindle support
 
 ## CLI and code
 
